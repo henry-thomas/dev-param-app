@@ -19,6 +19,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JFileChooser;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.filechooser.FileSystemView;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,9 +30,11 @@ import org.json.JSONObject;
 public class MainFrame extends javax.swing.JFrame {
 
     private File openFile;
-    private Map<String, DevParamSetting> paramSettingList;
+    private Map<String, DevParamSetting> paramSettingMap;
     private DevParamSetting selectedSetting;
+    private boolean changeCbx = true;
     private final List<String> cbxTypeValues = new ArrayList<>();
+    private String saveFilePath = FileSystemView.getFileSystemView().getDefaultDirectory().getPath();
 
     /**
      * Creates new form MainFrame
@@ -75,7 +78,7 @@ public class MainFrame extends javax.swing.JFrame {
         txtDDConfLabel = new javax.swing.JTextField();
         jLabel14 = new javax.swing.JLabel();
         txtDDConfVal = new javax.swing.JTextField();
-        jButton2 = new javax.swing.JButton();
+        btnDdAddOption = new javax.swing.JButton();
         btnDdDeleteItem = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jTabbedPane1 = new javax.swing.JTabbedPane();
@@ -99,11 +102,14 @@ public class MainFrame extends javax.swing.JFrame {
         lstParamList = new javax.swing.JList<>();
         jLabel10 = new javax.swing.JLabel();
         btnOpenFile = new javax.swing.JButton();
-        btnAddNew = new javax.swing.JButton();
         lblOpenFile = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
         txtParamName = new javax.swing.JTextField();
         btnDdConfig = new javax.swing.JButton();
+        jLabel15 = new javax.swing.JLabel();
+        txtGroup = new javax.swing.JTextField();
+        txtFileName = new javax.swing.JTextField();
+        jLabel16 = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jList1 = new javax.swing.JList<>();
@@ -122,21 +128,16 @@ public class MainFrame extends javax.swing.JFrame {
 
         jLabel12.setText("Label");
 
-        txtDdItemsList.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         jScrollPane6.setViewportView(txtDdItemsList);
 
         jLabel13.setText("Items");
 
         jLabel14.setText("Value");
 
-        jButton2.setText("Add");
-        jButton2.addActionListener(new java.awt.event.ActionListener() {
+        btnDdAddOption.setText("Add");
+        btnDdAddOption.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton2ActionPerformed(evt);
+                btnDdAddOptionActionPerformed(evt);
             }
         });
 
@@ -167,7 +168,7 @@ public class MainFrame extends javax.swing.JFrame {
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(dialogDDConfigLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(btnDdDeleteItem)
-                            .addComponent(jButton2))
+                            .addComponent(btnDdAddOption))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)))
                 .addGroup(dialogDDConfigLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 190, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -191,7 +192,7 @@ public class MainFrame extends javax.swing.JFrame {
                             .addComponent(txtDDConfLabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(txtDDConfVal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
-                        .addComponent(jButton2)
+                        .addComponent(btnDdAddOption)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(btnDdDeleteItem)))
                 .addContainerGap())
@@ -202,18 +203,23 @@ public class MainFrame extends javax.swing.JFrame {
         jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
         jLabel1.setText("Device Param Configurator");
 
+        cbxType.setToolTipText("The type of input on the web page");
         cbxType.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cbxTypeActionPerformed(evt);
             }
         });
 
+        txtParamUnit.setToolTipText("Check the protocol to make sure the units are correct. Eg: V, A, W, kW");
         txtParamUnit.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtParamUnitActionPerformed(evt);
             }
         });
         txtParamUnit.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtParamUnitKeyReleased(evt);
+            }
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 txtParamUnitKeyTyped(evt);
             }
@@ -223,12 +229,16 @@ public class MainFrame extends javax.swing.JFrame {
 
         jLabel6.setText("Register");
 
+        txtParamTitle.setToolTipText("The title of the setting on the web page");
         txtParamTitle.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtParamTitleActionPerformed(evt);
             }
         });
         txtParamTitle.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtParamTitleKeyReleased(evt);
+            }
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 txtParamTitleKeyTyped(evt);
             }
@@ -237,24 +247,32 @@ public class MainFrame extends javax.swing.JFrame {
         txtParamDesc.setColumns(20);
         txtParamDesc.setLineWrap(true);
         txtParamDesc.setRows(5);
+        txtParamDesc.setToolTipText("This should explain what the setting does");
         txtParamDesc.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
             public void propertyChange(java.beans.PropertyChangeEvent evt) {
                 txtParamDescPropertyChange(evt);
             }
         });
         txtParamDesc.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtParamDescKeyReleased(evt);
+            }
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 txtParamDescKeyTyped(evt);
             }
         });
         jScrollPane2.setViewportView(txtParamDesc);
 
+        txtParamReg.setToolTipText("Consult protocol to get the reg number. This could be useful, though not required");
         txtParamReg.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtParamRegActionPerformed(evt);
             }
         });
         txtParamReg.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtParamRegKeyReleased(evt);
+            }
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 txtParamRegKeyTyped(evt);
             }
@@ -271,6 +289,7 @@ public class MainFrame extends javax.swing.JFrame {
         jScrollPane1.setViewportView(txtPreview);
 
         btnSave.setText("Save");
+        btnSave.setEnabled(false);
         btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveActionPerformed(evt);
@@ -279,11 +298,6 @@ public class MainFrame extends javax.swing.JFrame {
 
         jLabel9.setText("Type");
 
-        lstParamList.setModel(new javax.swing.AbstractListModel<String>() {
-            String[] strings = { "Item 1", "Item 2", "Item 3", "Item 4", "Item 5" };
-            public int getSize() { return strings.length; }
-            public String getElementAt(int i) { return strings[i]; }
-        });
         lstParamList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
         lstParamList.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
             public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
@@ -295,22 +309,24 @@ public class MainFrame extends javax.swing.JFrame {
         jLabel10.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         jLabel10.setText("Select To Edit");
 
-        btnOpenFile.setText("Open from file");
-        btnOpenFile.setToolTipText("");
+        btnOpenFile.setText("Open file");
+        btnOpenFile.setToolTipText("Choose a file. JSON or Java file. If no file is selected, a new one will be created in your Documents/DevParams folder.");
         btnOpenFile.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnOpenFileActionPerformed(evt);
             }
         });
 
-        btnAddNew.setText("Add New");
-
         lblOpenFile.setFont(new java.awt.Font("Yu Gothic", 0, 14)); // NOI18N
-        lblOpenFile.setText("jLabel11");
+        lblOpenFile.setText("No File Selected");
 
         jLabel11.setText("Param Name");
 
+        txtParamName.setToolTipText("This name should correspond to the variable name in the Java parameter class");
         txtParamName.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtParamNameKeyReleased(evt);
+            }
             public void keyTyped(java.awt.event.KeyEvent evt) {
                 txtParamNameKeyTyped(evt);
             }
@@ -324,6 +340,25 @@ public class MainFrame extends javax.swing.JFrame {
             }
         });
 
+        jLabel15.setText("Group");
+
+        txtGroup.setToolTipText("Useful for grouping settings on the page.");
+        txtGroup.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtGroupActionPerformed(evt);
+            }
+        });
+        txtGroup.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtGroupKeyReleased(evt);
+            }
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                txtGroupKeyTyped(evt);
+            }
+        });
+
+        jLabel16.setText("File Name");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -332,50 +367,56 @@ public class MainFrame extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 21, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addGap(4, 4, 4))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel5)
-                                    .addComponent(jLabel6)
-                                    .addComponent(jLabel3)
-                                    .addComponent(jLabel9)
-                                    .addComponent(jLabel11))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(txtParamReg, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 324, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(btnSave)
-                            .addComponent(txtParamUnit, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtParamTitle, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel9, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel4, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel16, javax.swing.GroupLayout.Alignment.TRAILING))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(cbxType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(btnDdConfig)
-                                .addGap(94, 94, 94)))
-                        .addGap(30, 30, 30))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel10)
-                                .addGap(206, 206, 206)
-                                .addComponent(txtParamName, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(124, 124, 124))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(btnOpenFile)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(txtFileName)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(btnSave))
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                        .addComponent(txtParamReg, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 324, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(txtParamUnit, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(txtParamTitle, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGap(30, 30, 30))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel10)
+                                .addGap(131, 131, 131)
+                                .addComponent(jLabel11)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnAddNew)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(lblOpenFile)
-                                .addGap(152, 152, 152)))))
+                                .addComponent(txtParamName, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(btnOpenFile)
+                                        .addGap(150, 150, 150)
+                                        .addComponent(jLabel15))
+                                    .addComponent(lblOpenFile, javax.swing.GroupLayout.Alignment.LEADING))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtGroup, javax.swing.GroupLayout.PREFERRED_SIZE, 230, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel2)
-                        .addGap(0, 251, Short.MAX_VALUE))
+                        .addGap(0, 285, Short.MAX_VALUE))
                     .addComponent(jScrollPane1))
                 .addContainerGap())
         );
@@ -385,12 +426,25 @@ public class MainFrame extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(10, 10, 10)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel2)
-                            .addComponent(lblOpenFile))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(lblOpenFile)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnOpenFile)
+                                .addGap(18, 18, 18)
+                                .addComponent(jLabel10)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 384, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel15)
+                                    .addComponent(txtGroup, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(9, 9, 9)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(jLabel11)
                                     .addComponent(txtParamName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -415,20 +469,14 @@ public class MainFrame extends javax.swing.JFrame {
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addComponent(jLabel4))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                                .addComponent(btnSave)
-                                .addGap(23, 23, 23))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 445, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(btnOpenFile)
-                            .addComponent(btnAddNew))
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel10)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 384, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(0, 7, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(btnSave)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                        .addComponent(txtFileName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jLabel16)))
+                                .addGap(29, 29, 29)))))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Create", jPanel1);
@@ -462,7 +510,7 @@ public class MainFrame extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel8)
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 299, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(383, Short.MAX_VALUE))
+                .addContainerGap(416, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -510,22 +558,16 @@ public class MainFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtParamRegActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtParamRegActionPerformed
-        updatePreview();
     }//GEN-LAST:event_txtParamRegActionPerformed
 
     private void cbxTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbxTypeActionPerformed
+
         if (cbxTypeValues.get(cbxType.getSelectedIndex()).equals("dropDown")) {
             btnDdConfig.setVisible(true);
-            DropDownParam ddParam = new DropDownParam(selectedSetting);
-            selectedSetting = ddParam;
-
-//            selectedSetting = (DropDownParam) selectedSetting;
         } else {
-            selectedSetting = (DevParamSetting) selectedSetting;
             btnDdConfig.setVisible(false);
         }
-        if (selectedSetting != null) {
-            selectedSetting.setType((String) cbxType.getSelectedItem());
+        if (selectedSetting != null && changeCbx) {
             updatePreview();
         }
     }//GEN-LAST:event_cbxTypeActionPerformed
@@ -536,51 +578,50 @@ public class MainFrame extends javax.swing.JFrame {
         if (showOpenDialog == JFileChooser.APPROVE_OPTION) {
             openFile = jFileChooser.getSelectedFile();
             lblOpenFile.setText(openFile.getName());
-            paramSettingList = FileProcessor.processFileAuto(openFile);
+            paramSettingMap = FileProcessor.processFileAuto(openFile);
 //            lst.addAll(processFileAuto.keySet());
-            Vector<String> vector = new Vector<>(paramSettingList.keySet());
+            Vector<String> vector = new Vector<>(paramSettingMap.keySet());
             Collections.sort(vector);
             lstParamList.setListData(vector);
-//            for (DevParamSetting devParamSetting : processFileAuto) {
-//                lstParamList.(devParamSetting.getParamName(), null);
-//            }
+            lstParamList.setSelectedIndex(0);
+
+            txtFileName.setText(openFile.getName().split("\\.")[0] + ".js");
         }
 
     }//GEN-LAST:event_btnOpenFileActionPerformed
 
     private void lstParamListValueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_lstParamListValueChanged
+
         String selectedValue = lstParamList.getSelectedValue();
-        selectedSetting = paramSettingList.get(selectedValue);
+
+        selectedSetting = paramSettingMap.get(selectedValue);
         txtParamName.setText(selectedSetting.getParamName());
         txtParamDesc.setText(selectedSetting.getParamDesc());
         txtParamTitle.setText(selectedSetting.getTitle());
         txtParamUnit.setText(selectedSetting.getUnit());
-
-        cbxType.setSelectedIndex(cbxTypeValues.indexOf(selectedSetting.getType()));
+        txtGroup.setText(selectedSetting.getGroup());
+        txtParamReg.setText(selectedSetting.getRegister());
+        cbxType.setSelectedItem(selectedSetting.getType());
         updatePreview();
-
     }//GEN-LAST:event_lstParamListValueChanged
 
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+    private void btnDdAddOptionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDdAddOptionActionPerformed
         String label = txtDDConfLabel.getText().trim();
         String value = txtDDConfVal.getText().trim();
-        if (!label.equals("") && !value.equals("") && selectedSetting instanceof DropDownParam) {
+        if (!label.equals("") && !value.equals("") && selectedSetting != null) {
             DropDownOption dropDownOption = new DropDownOption();
             dropDownOption.setLabel(label);
             dropDownOption.setValue(value);
 
-            DropDownParam param = (DropDownParam) selectedSetting;
-            param.getOptions().add(dropDownOption);
+            selectedSetting.getOptions().add(dropDownOption);
             updateDdItemList();
         }
         updatePreview();
-    }//GEN-LAST:event_jButton2ActionPerformed
+    }//GEN-LAST:event_btnDdAddOptionActionPerformed
 
     private void btnDdConfigActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDdConfigActionPerformed
-        dialogDDConfig.setVisible(true);
-        if (selectedSetting instanceof DropDownParam) {
-            DropDownParam param = (DropDownParam) selectedSetting;
-            List<DropDownOption> options = param.getOptions();
+        if (selectedSetting != null) {
+            List<DropDownOption> options = selectedSetting.getOptions();
             Vector<String> lst = new Vector<>();
             for (DropDownOption option : options) {
                 String item = option.getLabel() + " : " + option.getValue();
@@ -588,13 +629,13 @@ public class MainFrame extends javax.swing.JFrame {
             }
             txtDdItemsList.setListData(lst);
         }
+        dialogDDConfig.setVisible(true);
         updatePreview();
     }//GEN-LAST:event_btnDdConfigActionPerformed
 
     private void btnDdDeleteItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDdDeleteItemActionPerformed
-        if (selectedSetting instanceof DropDownParam) {
-            DropDownParam param = (DropDownParam) selectedSetting;
-            List<DropDownOption> options = param.getOptions();
+        if (selectedSetting != null) {
+            List<DropDownOption> options = selectedSetting.getOptions();
             String selectedValue = txtDdItemsList.getSelectedValue();
             for (DropDownOption option : options) {
                 if ((option.getLabel() + " : " + option.getValue()).equals(selectedValue)) {
@@ -604,12 +645,14 @@ public class MainFrame extends javax.swing.JFrame {
             }
             updateDdItemList();
             updatePreview();
-
         }
     }//GEN-LAST:event_btnDdDeleteItemActionPerformed
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         updatePreview();
+        selectedSetting.setDirty(false);
+        btnSave.setEnabled(selectedSetting.isDirty());
+        FileProcessor.saveObjectToFileAsJson(paramSettingMap, saveFilePath + "\\DevParams\\" + txtFileName.getText());
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void txtParamTitleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtParamTitleActionPerformed
@@ -622,7 +665,6 @@ public class MainFrame extends javax.swing.JFrame {
 
     private void txtParamDescPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_txtParamDescPropertyChange
         updatePreview();
-        // TODO add your handling code here:
     }//GEN-LAST:event_txtParamDescPropertyChange
 
     private void txtParamDescKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamDescKeyTyped
@@ -638,24 +680,60 @@ public class MainFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_txtParamUnitKeyTyped
 
     private void txtParamTitleKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamTitleKeyTyped
-       updatePreview();
+        updatePreview();
     }//GEN-LAST:event_txtParamTitleKeyTyped
 
     private void txtParamNameKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamNameKeyTyped
         updatePreview();
     }//GEN-LAST:event_txtParamNameKeyTyped
 
+    private void txtGroupActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtGroupActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtGroupActionPerformed
+
+    private void txtGroupKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtGroupKeyTyped
+        updatePreview();
+    }//GEN-LAST:event_txtGroupKeyTyped
+
+    private void txtGroupKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtGroupKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtGroupKeyReleased
+
+    private void txtParamNameKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamNameKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtParamNameKeyReleased
+
+    private void txtParamTitleKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamTitleKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtParamTitleKeyReleased
+
+    private void txtParamUnitKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamUnitKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtParamUnitKeyReleased
+
+    private void txtParamRegKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamRegKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtParamRegKeyReleased
+
+    private void txtParamDescKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtParamDescKeyReleased
+        updatePreview();
+    }//GEN-LAST:event_txtParamDescKeyReleased
+
     private void updatePreview() {
         try {
             if (selectedSetting != null) {
-
+                selectedSetting.setDirty(true);
                 selectedSetting.setParamDesc(txtParamDesc.getText());
                 selectedSetting.setParamName(txtParamName.getText());
                 selectedSetting.setUnit(txtParamUnit.getText());
                 selectedSetting.setTitle(txtParamTitle.getText());
+                selectedSetting.setGroup(txtGroup.getText());
+                selectedSetting.setRegister(txtParamReg.getText());
+                selectedSetting.setType((String) cbxType.getSelectedItem());
                 ObjectMapper om = new ObjectMapper();
                 String writeValueAsString = om.writerWithDefaultPrettyPrinter().writeValueAsString(selectedSetting);
                 txtPreview.setText(writeValueAsString);
+                btnSave.setEnabled(selectedSetting.isDirty());
             }
         } catch (JsonProcessingException ex) {
             Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
@@ -663,9 +741,8 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     private void updateDdItemList() {
-        if (selectedSetting instanceof DropDownParam) {
-            DropDownParam param = (DropDownParam) selectedSetting;
-            List<DropDownOption> options = param.getOptions();
+        if (selectedSetting != null) {
+            List<DropDownOption> options = selectedSetting.getOptions();
             Vector<String> lst = new Vector<>();
             for (DropDownOption option : options) {
                 String item = option.getLabel() + " : " + option.getValue();
@@ -711,20 +788,21 @@ public class MainFrame extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton btnAddNew;
+    private javax.swing.JButton btnDdAddOption;
     private javax.swing.JButton btnDdConfig;
     private javax.swing.JButton btnDdDeleteItem;
     private javax.swing.JButton btnOpenFile;
     private javax.swing.JButton btnSave;
     private javax.swing.JComboBox<String> cbxType;
     private javax.swing.JDialog dialogDDConfig;
-    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
+    private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -750,6 +828,8 @@ public class MainFrame extends javax.swing.JFrame {
     private javax.swing.JTextField txtDDConfLabel;
     private javax.swing.JTextField txtDDConfVal;
     private javax.swing.JList<String> txtDdItemsList;
+    private javax.swing.JTextField txtFileName;
+    private javax.swing.JTextField txtGroup;
     private javax.swing.JTextArea txtParamDesc;
     private javax.swing.JTextField txtParamName;
     private javax.swing.JTextField txtParamReg;

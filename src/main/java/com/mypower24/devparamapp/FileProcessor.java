@@ -4,11 +4,20 @@
  */
 package com.mypower24.devparamapp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,12 +34,16 @@ import java.util.stream.Stream;
 public class FileProcessor {
 
     private static final Logger LOG = Logger.getLogger(FileProcessor.class.getName());
+    public static final String FILE_BACKUP_SUFIX = "_backup";
 
     public static Map<String, DevParamSetting> processFileAuto(File file) {
         String name = file.getName();
         if (name.endsWith(".java")) {
             Map<String, DevParamSetting> fileMap = processJavaFile(file);
             return fileMap;
+        }
+        if (name.endsWith(".js") || name.endsWith(".json")) {
+            return processJsonFile(file);
         }
         return null;
     }
@@ -114,15 +127,14 @@ public class FileProcessor {
         return devParamSetting;
     }
 
-    public static void processJsonFile(File file) {
-        try ( FileInputStream fis = new FileInputStream(file)) {
-            LOG.info("Processing JSON file");
-        } catch (FileNotFoundException ex) {
-            Logger.getLogger(FileProcessor.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
-            Logger.getLogger(FileProcessor.class.getName()).log(Level.SEVERE, null, ex);
-        }
+    public static Map<String, DevParamSetting> processJsonFile(File file) {
+        Map<String, DevParamSetting> map = new HashMap<>();
 
+        TypeReference<HashMap<String, DevParamSetting>> typeRef = new TypeReference<HashMap<String, DevParamSetting>>() {
+        };
+        
+        readJsonObjectFromFileIntoObject(file.getPath(), map, typeRef);
+        return map;
     }
 
     public static List<String> readFileLines(String fd) {
@@ -136,6 +148,110 @@ public class FileProcessor {
             }
         }
         return null;
+    }
+
+    public static boolean saveObjectToFileAsJson(Object object, String file) {
+        return saveObjectToFileAsJson(object, file, false, false);
+    }
+
+    public static boolean saveObjectToFileAsJson(Object object, String filePathStr, boolean writeWithBackup, boolean append) {
+        File f = new File(filePathStr);
+        try {
+            Files.createDirectories(f.getParentFile().toPath());
+        } catch (IOException ex) {
+            java.util.logging.Logger.getLogger(FileProcessor.class
+                    .getName()).log(Level.SEVERE, null, ex);
+        }
+        if (writeWithBackup) {
+            if (Files.isReadable(f.toPath())) {
+                copyFile(filePathStr, filePathStr + FILE_BACKUP_SUFIX);
+            }
+        }
+
+        try ( FileWriter fw = new FileWriter(f, append)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            //for prity print
+            objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+            objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+            String strJson = objectMapper.writeValueAsString(object);
+
+            fw.write(strJson);
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (writeWithBackup) {
+            copyFile(filePathStr, filePathStr + FILE_BACKUP_SUFIX);
+        }
+
+        return true;
+    }
+
+    public static boolean copyFile(String src, String dst) {
+        Path copied = Paths.get(dst);
+        Path originalPath = Paths.get(src);
+        try {
+            Files.copy(originalPath, copied, StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+
+    public static boolean readJsonObjectFromFileIntoObject(String file, Object destination) {
+        return readJsonObjectFromFileIntoObject(file, destination, null);
+    }
+
+    public static boolean readJsonObjectFromFileIntoObject(String file, Object destination, TypeReference typeRef) {
+        if (!Files.exists(Paths.get(file)) && Files.exists(Paths.get(file + FILE_BACKUP_SUFIX))) {
+            copyFile(file + FILE_BACKUP_SUFIX, file);
+        }
+
+        if (Files.exists(Paths.get(file))) {
+            String jsonContent = FileProcessor.readFileAsString(file);
+            if (jsonContent != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                try {
+                    objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+                    objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+                    objectMapper.configure(DeserializationFeature.FAIL_ON_UNRESOLVED_OBJECT_IDS, false);
+
+                    JsonNode rootNode = objectMapper.readTree(jsonContent.getBytes());
+                    if (rootNode == null) {
+                        return false;
+                    }
+                    if (typeRef != null) {
+                        objectMapper.readerForUpdating(destination).readValue(rootNode.traverse(), typeRef);
+                    } else {
+                        objectMapper.readerForUpdating(destination).readValue(rootNode.traverse());
+                    }
+                    return true;
+
+                } catch (IOException ex) {
+                    java.util.logging.Logger.getLogger(FileProcessor.class
+                            .getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        saveObjectToFileAsJson(destination, file);
+        return false;
+    }
+
+    public static byte[] readFile(String filePath) {
+        try ( FileInputStream input = new FileInputStream(filePath)) {
+            // load a properties file
+            byte b[] = new byte[input.available()];
+            input.read(b, 0, b.length);
+            return b;
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String readFileAsString(String filePath) {
+        return new String(readFile(filePath));
     }
 
 }

@@ -4,17 +4,26 @@
  */
 package com.mypower24.devparamapp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author henry
  */
 public class DevParamSetting {
 
-    private String paramName;
-    private String title;
-    private String paramDesc;
-    private String type;
-    private String unit;
+    protected String paramName = "";
+    protected String title = "";
+    protected String paramDesc = "";
+    protected String type = "";
+    protected String unit = "";
+    protected String group = "";
+    protected String register = "";
+    private List<DropDownOption> options;
+    @JsonIgnore
+    protected boolean dirty = false;
 
     public String getUnit() {
         return unit;
@@ -29,6 +38,11 @@ public class DevParamSetting {
     }
 
     public void setType(String type) {
+        if (type.equals("dropDown") && options == null) {
+            options = new ArrayList<>();
+        } else if(options != null && !type.equals("dropDown")){
+            options = null;
+        }
         this.type = type;
     }
 
@@ -54,6 +68,39 @@ public class DevParamSetting {
 
     public void setParamDesc(String paramDesc) {
         this.paramDesc = paramDesc;
+    }
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
+    }
+
+    public String getRegister() {
+        return register;
+    }
+
+    public void setRegister(String register) {
+        this.register = register;
+    }
+
+    public List<DropDownOption> getOptions() {
+        return options;
+    }
+
+    @Override
+    public String toString() {
+        return "DevParamSetting{" + "paramName=" + paramName + ", title=" + title + ", paramDesc=" + paramDesc + ", type=" + type + ", unit=" + unit + ", group=" + group + ", register=" + register + ", dirty=" + dirty + '}';
     }
 
 }
